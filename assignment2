@@ -1,0 +1,68 @@
+[root@ip-172-31-45-169 09-deployments]# cat kubia-deployment-and-service-v1-1.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubia
+spec:
+  selector:
+    matchLabels:
+      app: kubia
+  replicas: 1
+  template:
+    metadata:
+      name: kubia
+      labels:
+        app: kubia
+    spec:
+      containers:
+      - image: luksa/kubia:v1
+        name: nodejs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubia
+spec:
+  type: ClusterIP
+  selector:
+    app: kubia
+  ports:
+  - port: 80
+    targetPort: 8080
+[root@ip-172-31-45-169 09-deployments]#
+
+
+#####
+[root@ip-172-31-45-169 09-deployments]#  kubectl create -f kubia-deployment-and-service-v1-1.yaml --record
+deployment.apps/kubia created
+service/kubia created
+[root@ip-172-31-45-169 09-deployments]#
+[root@ip-172-31-45-169 09-deployments]#   kubectl rollout status deployment kubia
+Waiting for deployment "kubia" rollout to finish: 0 of 1 updated replicas are available...
+
+
+[root@ip-172-31-45-169 09-deployments]#   kubectl rollout status deployment kubia
+deployment "kubia" successfully rolled out
+[root@ip-172-31-45-169 09-deployments]# kubectl get svc
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP   101s
+kubia        ClusterIP   10.99.181.179   <none>        80/TCP    65s
+
+[root@ip-172-31-45-169 09-deployments]#  kubectl get rs
+NAME               DESIRED   CURRENT   READY   AGE
+kubia-59d857b444   1         1         1       113s
+
+### updating
+
+[root@ip-172-31-45-169 09-deployments]#  kubectl patch deployment kubia -p '{"spec": {"minReadySeconds": 10}}'
+deployment.apps/kubia patched
+[root@ip-172-31-45-169 09-deployments]#  kubectl set image deployment kubia nodejs=luksa/kubia:v2
+deployment.apps/kubia image updated
+[root@ip-172-31-45-169 09-deployments]#  kubectl rollout status deployment kubia
+Waiting for deployment "kubia" rollout to finish: 1 old replicas are pending termination...
+
+[root@ip-172-31-45-169 09-deployments]# kubectl get po -o wide
+NAME                     READY   STATUS        RESTARTS   AGE     IP               NODE                                               NOMINATED NODE   READINESS GATES
+kubia-59d857b444-5h4dm   1/1     Terminating   0          2m45s   192.168.186.86   ip-172-31-47-175.ap-southeast-1.compute.internal   <none>           <none>
+kubia-7d5c456ffc-2vkqp   1/1     Running       0          34s     192.168.186.87   ip-172-31-47-175.ap-southeast-1.compute.internal   <none>           <none>
+
