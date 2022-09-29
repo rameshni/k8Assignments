@@ -1,0 +1,26 @@
+[root@ip-172-31-45-169 05-services]# kubectl apply -f kubia-svc-nodeport.yaml
+The Service "kubia-nodeport2" is invalid: spec.ports[0].nodePort: Invalid value: 30123: provided port is already allocated
+
+
+Error says the port is already allocated.
+so we find for existing service what ports are used
+
+[root@ip-172-31-45-169 05-services]# kubectl get svc -o wide
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        3m43s   <none>
+kubia-nodeport   NodePort    10.107.13.246   <none>        80:30123/TCP   41s     app=kubia
+
+
+30123 is already used by another service kubia-nodeport
+so change the port for our new service to 30124 and deply
+
+
+[root@ip-172-31-45-169 05-services]# kubectl apply -f kubia-svc-nodeport.yaml
+service/kubia-nodeport2 created
+
+
+[root@ip-172-31-45-169 05-services]# kubectl get svc -o wide
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+kubernetes        ClusterIP   10.96.0.1       <none>        443/TCP        7m15s   <none>
+kubia-nodeport    NodePort    10.107.13.246   <none>        80:30123/TCP   4m13s   app=kubia
+kubia-nodeport2   NodePort    10.106.39.33    <none>        80:30124/TCP   5s      app=kubia2
