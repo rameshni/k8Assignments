@@ -1,0 +1,46 @@
+Now try to delete the Pods one by one (first voting Pod, then worker pod, then db pod) and see what happens to the voting and result app after deleting.
+
+#Delete voting pod:
+pod deleted but one more pod was spawned by Replica set
+No impact. able to vote and observe result
+
+#Delete worker pod:
+pod deleted but one more pod was spawned by Replica set
+No impact. able to vote and observe result
+Logs relaed to voting are lost but its not an issue
+
+
+#Delete db pod:
+pod deleted but one more pod was spawned by Replica set
+But previous data is lost. so all old votes are not seen.
+new voting is flowing but results are not updated
+worker pod restarted as connect to db(old) could not be done.
+But result is not reflecting. and from log socket is closed 
+
+[root@ip-172-31-45-169 example-voting-app]#  kubectl logs result-5d57b59f4b-wcx5n
+Thu, 26 Sep 2022 12:06:26 GMT body-parser deprecated bodyParser: use individual json/urlencoded middlewares at server.js:67:9
+Thu, 26 Sep 2022 12:06:26 GMT body-parser deprecated undefined extended: provide extended option at ../node_modules/body-parser/index.js:105:29
+App running on port 80
+Connected to db
+Error performing query: Error: This socket has been ended by the other party
+
+Solution:
+Restart the result pod
+[root@ip-172-31-45-169 example-voting-app]# kubectl delete po result-5d57b59f4b-wcx5n
+pod "result-5d57b59f4b-wcx5n" deleted
+
+NAME                      READY   STATUS        RESTARTS   AGE
+db-b54cd94f4-84x7j        1/1     Running       0          10m
+redis-868d64d78-7jmpv     1/1     Running       0          3h25m
+result-5d57b59f4b-j6sfh   1/1     Running       0          15s
+result-5d57b59f4b-wcx5n   1/1     Terminating   0          31m
+vote-94849dc97-bvnxt      1/1     Running       0          42m
+worker-dd46d7584-7s97q    1/1     Running       3          40m
+
+[root@ip-172-31-45-169 ~]# kubectl logs result-5d57b59f4b-j6sfh
+Thu, 26 Sep 2022 12:38:09 GMT body-parser deprecated bodyParser: use individual json/urlencoded middlewares at server.js:67:9
+Thu, 26 Sep 2022 12:38:09 GMT body-parser deprecated undefined extended: provide extended option at ../node_modules/body-parser/index.js:105:29
+App running on port 80
+Connected to db
+
+New results are visible ; old results are lost
